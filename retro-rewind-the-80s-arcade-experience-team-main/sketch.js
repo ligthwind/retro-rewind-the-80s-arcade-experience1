@@ -54,7 +54,7 @@ function setupGame() {
   trees = new Group();
   gifts = new Group();
 
-  walls.collider = "static";
+  walls.physics = "static";
   walls.visible = false;
 
   grinch = new Sprite(width * 0.12, height * 0.18, 42, 42);
@@ -83,7 +83,7 @@ function createTrees() {
   for (let pos of spots) {
 
   let tree = new trees.Sprite(width * pos[0], height * pos[1], 42, 42);
-    tree.collider = "static";
+    tree.physics = "static";
     tree.image = treeFrame;
     tree.scale = spriteScale(1.8);
   }
@@ -132,6 +132,7 @@ function createMaze() {
 function makeWall(x, y, w, h) {
 
   let wall = new walls.Sprite(x, y, w, h);
+  wall.physics = "static";
   wall.visible = false;
   wallRects.push({ x, y, w, h });
 }
