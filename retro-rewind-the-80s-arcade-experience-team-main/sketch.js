@@ -309,6 +309,8 @@ function collisions() {
     }
   }
 
+  grinch.collide(trees);
+
   for (let gift of gifts) {
 
     if (grinch.collides(gift)) {
