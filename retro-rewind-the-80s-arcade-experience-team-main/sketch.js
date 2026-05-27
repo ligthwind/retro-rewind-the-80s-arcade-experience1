@@ -274,25 +274,54 @@ function drawCenteredMessage(message) {
 function movement() {
 
   let speed = Math.max(4.5, Math.min(width, height) * 0.007);
+  let nextX = grinch.x;
+  let nextY = grinch.y;
 
   grinch.vel.x = 0;
   grinch.vel.y = 0;
 
   if (kb.pressing("left")) {
-    grinch.vel.x = -speed;
+    nextX -= speed;
   }
 
   if (kb.pressing("right")) {
-    grinch.vel.x = speed;
+    nextX += speed;
   }
 
   if (kb.pressing("up")) {
-    grinch.vel.y = -speed;
+    nextY -= speed;
   }
 
   if (kb.pressing("down")) {
-    grinch.vel.y = speed;
+    nextY += speed;
   }
+
+  if (canMoveTo(nextX, grinch.y)) {
+    grinch.x = nextX;
+  }
+
+  if (canMoveTo(grinch.x, nextY)) {
+    grinch.y = nextY;
+  }
+}
+
+function canMoveTo(x, y) {
+
+  const size = Math.max(26, Math.min(width, height) * 0.035);
+
+  for (let wall of wallRects) {
+
+    if (rectsOverlap(x, y, size, size, wall.x, wall.y, wall.w, wall.h)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+
+  return Math.abs(ax - bx) < (aw + bw) / 2 && Math.abs(ay - by) < (ah + bh) / 2;
 }
 
 function collisions() {
