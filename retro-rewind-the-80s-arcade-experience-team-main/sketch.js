@@ -7,6 +7,7 @@ let wallRects = [];
 let score = 500;
 let winningScore = 1200;
 let gameState = "loading";
+let hitCooldown = 0;
 
 let faceSheet;
 let deadSheet;
@@ -46,6 +47,7 @@ function setup() {
 function setupGame() {
 
   score = 500;
+  hitCooldown = 0;
   wallRects = [];
 
   walls = new Group();
@@ -295,13 +297,15 @@ function movement() {
 function collisions() {
 
   grinch.collide(walls);
+  hitCooldown = Math.max(0, hitCooldown - 1);
 
   for (let tree of trees) {
 
-    if (grinch.collides(tree)) {
+    if (grinch.collides(tree) && hitCooldown === 0) {
 
       score -= 100;
-      moveSpriteToOpenSpot(tree);
+      hitCooldown = 35;
+      bounceAwayFrom(tree);
     }
   }
 
@@ -330,6 +334,18 @@ function moveSpriteToOpenSpot(sprite) {
 
   sprite.x = random(width * 0.12, width * 0.88);
   sprite.y = random(height * 0.16, height * 0.84);
+}
+
+function bounceAwayFrom(sprite) {
+
+  let dx = grinch.x - sprite.x;
+  let dy = grinch.y - sprite.y;
+  let distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+
+  grinch.x += dx / distance * 32;
+  grinch.y += dy / distance * 32;
+  grinch.vel.x = dx / distance * 4;
+  grinch.vel.y = dy / distance * 4;
 }
 
 function drawScore() {
@@ -400,6 +416,7 @@ function resetGame() {
 
   removeGameSprites();
   score = 500;
+  hitCooldown = 0;
   gameState = "title";
 }
 
