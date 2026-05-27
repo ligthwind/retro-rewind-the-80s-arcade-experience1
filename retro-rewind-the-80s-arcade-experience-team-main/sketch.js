@@ -1,19 +1,26 @@
 let grinch;
-
 let walls;
 let trees;
 let gifts;
+let wallRects = [];
 
 let score = 500;
 let winningScore = 1200;
-
 let gameState = "loading";
 
-// images
 let faceSheet;
 let deadSheet;
 let treeSheet;
 let giftSheet;
+let faceFrame;
+let treeFrame;
+let giftFrame;
+
+const playfieldColor = "#041f08";
+const wallColor = "#213f7a";
+const wallGlow = "#25f4ff";
+const giftColor = "#ffda3a";
+const dangerColor = "#ff2d55";
 
 function preload() {
 
@@ -26,209 +33,244 @@ function preload() {
 function setup() {
 
   new Canvas(windowWidth, windowHeight);
-
   world.gravity.y = 0;
-
   textAlign(CENTER, CENTER);
-
+  imageMode(CENTER);
+  rectMode(CENTER);
+  faceFrame = cropFrame(faceSheet, 0, 0);
+  treeFrame = cropFrame(treeSheet, 0, 0);
+  giftFrame = cropFrame(giftSheet, 0, 0);
   gameState = "title";
 }
 
-// game setup
-
 function setupGame() {
+
+  score = 500;
+  wallRects = [];
 
   walls = new Group();
   trees = new Group();
   gifts = new Group();
 
   walls.collider = "static";
+  walls.visible = false;
 
-  // player
-  grinch = new Sprite(120, 120, 40, 40);
-
+  grinch = new Sprite(width * 0.12, height * 0.18, 42, 42);
   grinch.rotationLock = true;
-
-  grinch.image = faceSheet;
-  grinch.scale = 0.55;
-
-  // trees
-  for (let i = 0; i < 10; i++) {
-
-    let tree = new trees.Sprite(
-      random(150, width - 150),
-      random(150, height - 150),
-      50,
-      50
-    );
-
-    tree.collider = "static";
-
-    tree.image = treeSheet;
-    tree.scale = 0.55;
-  }
-
-  // gifts
-  for (let i = 0; i < 8; i++) {
-
-    let gift = new gifts.Sprite(
-      random(150, width - 150),
-      random(150, height - 150),
-      40,
-      40
-    );
-
-    gift.image = giftSheet;
-    gift.scale = 0.55;
-  }
+  grinch.image = faceFrame;
+  grinch.scale = spriteScale(2.1);
 
   createMaze();
+  createTrees();
+  createGifts();
 }
 
-// maze
+function createTrees() {
+
+  const spots = [
+    [0.26, 0.24],
+    [0.72, 0.24],
+    [0.48, 0.36],
+    [0.22, 0.55],
+    [0.78, 0.55],
+    [0.36, 0.74],
+    [0.62, 0.74],
+    [0.86, 0.36]
+  ];
+
+  for (let pos of spots) {
+
+  let tree = new trees.Sprite(width * pos[0], height * pos[1], 42, 42);
+    tree.collider = "static";
+    tree.image = treeFrame;
+    tree.scale = spriteScale(1.8);
+  }
+}
+
+function createGifts() {
+
+  const spots = [
+    [0.18, 0.33],
+    [0.39, 0.2],
+    [0.6, 0.2],
+    [0.84, 0.26],
+    [0.32, 0.46],
+    [0.67, 0.46],
+    [0.2, 0.78],
+    [0.82, 0.78],
+    [0.5, 0.62]
+  ];
+
+  for (let pos of spots) {
+
+    let gift = new gifts.Sprite(width * pos[0], height * pos[1], 34, 34);
+    gift.image = giftFrame;
+    gift.scale = spriteScale(1.7);
+  }
+}
 
 function createMaze() {
 
-  // OUTER WALLS
-  new walls.Sprite(width / 2, 20, width, 40);
+  const margin = Math.max(28, Math.min(width, height) * 0.045);
+  const thick = Math.max(18, Math.min(width, height) * 0.035);
 
-  new walls.Sprite(width / 2, height - 20, width, 40);
+  makeWall(width / 2, margin, width - margin * 2, thick);
+  makeWall(width / 2, height - margin, width - margin * 2, thick);
+  makeWall(margin, height / 2, thick, height - margin * 2);
+  makeWall(width - margin, height / 2, thick, height - margin * 2);
 
-  new walls.Sprite(20, height / 2, 40, height);
+  makeWall(width * 0.28, height * 0.25, width * 0.28, thick * 0.8);
+  makeWall(width * 0.72, height * 0.25, width * 0.28, thick * 0.8);
+  makeWall(width * 0.5, height * 0.42, thick * 0.8, height * 0.28);
+  makeWall(width * 0.27, height * 0.58, width * 0.24, thick * 0.8);
+  makeWall(width * 0.73, height * 0.58, width * 0.24, thick * 0.8);
+  makeWall(width * 0.5, height * 0.78, width * 0.38, thick * 0.8);
+}
 
-  new walls.Sprite(width - 20, height / 2, 40, height);
+function makeWall(x, y, w, h) {
 
-  // INNER WALLS
-  new walls.Sprite(300, 150, 400, 30);
-
-  new walls.Sprite(700, 150, 400, 30);
-
-  new walls.Sprite(500, 300, 30, 250);
-
-  new walls.Sprite(250, 500, 300, 30);
-
-  new walls.Sprite(750, 500, 300, 30);
-
-  new walls.Sprite(500, 650, 500, 30);
+  let wall = new walls.Sprite(x, y, w, h);
+  wall.visible = false;
+  wallRects.push({ x, y, w, h });
 }
 
 function draw() {
 
-  background("#0a280a");
+  drawBackdrop();
 
-  // LOADING
   if (gameState === "loading") {
 
-    fill("white");
-
-    textSize(40);
-
-    text("Loading...", width / 2, height / 2);
-
+    drawCenteredMessage("LOADING...");
     return;
   }
 
-  // TITLE
   if (gameState === "title") {
 
-    fill("white");
-
-    textSize(70);
-
-    text("GRINCH GIFT GRAB", width / 2, 180);
-
-    textSize(30);
-
-    text("Inspired by Pac-Man", width / 2, 260);
-
-    text("Collect gifts and avoid trees!", width / 2, 340);
-
-    fill("red");
-
-    textSize(35);
-
-    text("PRESS SPACE TO START", width / 2, 500);
+    drawTitleScreen();
 
     if (kb.presses("space")) {
 
       setupGame();
-
       gameState = "play";
     }
 
     return;
   }
 
-  // play
   if (gameState === "play") {
 
     movement();
-
     collisions();
-
+    drawMazeArt();
     drawScore();
+    return;
   }
 
-  // game over situation
   if (gameState === "gameover") {
 
-    background("#000000");
-
-    fill("red");
-
-    textSize(80);
-
-    text("GAME OVER", width / 2, 350);
-
-    fill("white");
-
-    textSize(40);
-
-    text("FINAL SCORE: " + score, width / 2, 450);
-
-    textSize(28);
-
-    text("PRESS R TO TRY AGAIN", width / 2, 530);
-
-    if (kb.presses("r")) {
-
-      resetGame();
-    }
+    drawGameOver();
+    return;
   }
 
-  // win situation
   if (gameState === "win") {
 
-    background("#052350");
-
-    fill("lime");
-
-    textSize(72);
-
-    text("YOU WIN!", width / 2, 330);
-
-    fill("white");
-
-    textSize(34);
-
-    text("FINAL SCORE: " + score, width / 2, 430);
-
-    textSize(28);
-
-    text("PRESS R TO PLAY AGAIN", width / 2, 520);
-
-    if (kb.presses("r")) {
-
-      resetGame();
-    }
+    drawWinScreen();
   }
 }
 
-// moving
+function drawBackdrop() {
+
+  background(playfieldColor);
+
+  push();
+  noFill();
+  stroke(0, 255, 150, 35);
+  strokeWeight(1);
+
+  for (let x = 0; x < width; x += 32) {
+    line(x, 0, x, height);
+  }
+
+  for (let y = 0; y < height; y += 32) {
+    line(0, y, width, y);
+  }
+
+  stroke(255, 0, 100, 110);
+  strokeWeight(4);
+  rect(width / 2, height / 2, width - 20, height - 20);
+  pop();
+}
+
+function drawTitleScreen() {
+
+  push();
+  textAlign(CENTER, CENTER);
+  rectMode(CENTER);
+  imageMode(CENTER);
+  noStroke();
+
+  fill(0, 0, 0, 150);
+  rect(width / 2, height * 0.46, width * 0.84, height * 0.68, 10);
+
+  fill("#9cff4d");
+  textSize(Math.min(68, width * 0.075));
+  text("GRINCH GIFT GRAB", width / 2, height * 0.23);
+
+  fill(wallGlow);
+  textSize(Math.min(30, width * 0.035));
+  text("RETRO MAZE CHASE", width / 2, height * 0.34);
+
+  image(faceFrame, width * 0.38, height * 0.5, 96, 96);
+  image(giftFrame, width * 0.5, height * 0.5, 76, 76);
+  image(treeFrame, width * 0.62, height * 0.5, 96, 96);
+
+  fill(giftColor);
+  textSize(Math.min(32, width * 0.038));
+  text("PRESS SPACE TO START", width / 2, height * 0.68);
+
+  fill("#ffffff");
+  textSize(Math.min(20, width * 0.025));
+  text("Collect gifts. Dodge trees. Keep the score alive.", width / 2, height * 0.75);
+  pop();
+}
+
+function drawMazeArt() {
+
+  push();
+  rectMode(CENTER);
+  strokeWeight(5);
+  stroke(wallGlow);
+  fill(wallColor);
+
+  for (let wall of wallRects) {
+    rect(wall.x, wall.y, wall.w, wall.h, 6);
+  }
+
+  stroke(255, 0, 160, 120);
+  strokeWeight(1);
+  noFill();
+
+  for (let wall of wallRects) {
+    rect(wall.x, wall.y, wall.w + 8, wall.h + 8, 8);
+  }
+
+  pop();
+}
+
+function drawCenteredMessage(message) {
+
+  push();
+  fill("#ffffff");
+  noStroke();
+  textAlign(CENTER, CENTER);
+  textSize(40);
+  text(message, width / 2, height / 2);
+  pop();
+}
 
 function movement() {
 
-  let speed = 5;
+  let speed = Math.max(4.5, Math.min(width, height) * 0.007);
 
   grinch.vel.x = 0;
   grinch.vel.y = 0;
@@ -250,118 +292,151 @@ function movement() {
   }
 }
 
-// colliding
-
 function collisions() {
 
   grinch.collide(walls);
 
-  // with trees
   for (let tree of trees) {
 
     if (grinch.collides(tree)) {
 
       score -= 100;
-
-      tree.x = random(100, width - 100);
-
-      tree.y = random(100, height - 100);
+      moveSpriteToOpenSpot(tree);
     }
   }
 
-  // with gifts
   for (let gift of gifts) {
 
     if (grinch.collides(gift)) {
 
       score += 100;
-
-      gift.x = random(100, width - 100);
-
-      gift.y = random(100, height - 100);
+      moveSpriteToOpenSpot(gift);
     }
   }
 
-  // game over
   if (score <= 0) {
 
     score = 0;
-
     endGame("gameover");
   }
 
-  // win
   if (score >= winningScore) {
 
     endGame("win");
   }
 }
 
-// score
+function moveSpriteToOpenSpot(sprite) {
+
+  sprite.x = random(width * 0.12, width * 0.88);
+  sprite.y = random(height * 0.16, height * 0.84);
+}
 
 function drawScore() {
 
-  fill("white");
-
+  push();
+  rectMode(CORNER);
   textAlign(LEFT, TOP);
-
-  textSize(30);
-
-  text("Score: " + score, 55, 50);
+  noStroke();
+  fill(0, 0, 0, 150);
+  rect(16, 16, 225, 52, 8);
+  fill("#ffffff");
+  textSize(28);
+  text("SCORE " + score, 28, 25);
 
   textAlign(RIGHT, TOP);
+  fill(0, 0, 0, 150);
+  rect(width - 241, 16, 225, 52, 8);
+  fill("#ffffff");
+  text("GOAL " + winningScore, width - 28, 25);
+  pop();
+}
 
-  text("Goal: " + winningScore, width - 55, 50);
+function drawGameOver() {
+
+  push();
+  background("#000000");
+  textAlign(CENTER, CENTER);
+  noStroke();
+  fill(dangerColor);
+  textSize(Math.min(82, width * 0.1));
+  text("GAME OVER", width / 2, height * 0.43);
+  fill("#ffffff");
+  textSize(34);
+  text("FINAL SCORE: " + score, width / 2, height * 0.55);
+  fill(giftColor);
+  textSize(24);
+  text("PRESS R TO PLAY AGAIN", width / 2, height * 0.65);
+  pop();
+
+  if (kb.presses("r")) {
+    resetGame();
+  }
+}
+
+function drawWinScreen() {
+
+  push();
+  background("#06133a");
+  textAlign(CENTER, CENTER);
+  noStroke();
+  fill("#9cff4d");
+  textSize(Math.min(82, width * 0.1));
+  text("YOU WIN!", width / 2, height * 0.43);
+  fill("#ffffff");
+  textSize(34);
+  text("FINAL SCORE: " + score, width / 2, height * 0.55);
+  fill(giftColor);
+  textSize(24);
+  text("PRESS R TO PLAY AGAIN", width / 2, height * 0.65);
+  pop();
+
+  if (kb.presses("r")) {
+    resetGame();
+  }
 }
 
 function resetGame() {
 
+  removeGameSprites();
   score = 500;
-
-  if (grinch) {
-
-    grinch.remove();
-  }
-
-  if (walls) {
-
-    walls.removeAll();
-  }
-
-  if (trees) {
-
-    trees.removeAll();
-  }
-
-  if (gifts) {
-
-    gifts.removeAll();
-  }
-
   gameState = "title";
 }
 
 function endGame(nextState) {
 
-  if (grinch) {
+  removeGameSprites();
+  gameState = nextState;
+}
 
+function removeGameSprites() {
+
+  if (grinch) {
     grinch.remove();
+    grinch = null;
   }
 
   if (walls) {
-
     walls.removeAll();
   }
 
   if (trees) {
-
     trees.removeAll();
   }
 
   if (gifts) {
-
     gifts.removeAll();
   }
 
-  gameState = nextState;
+  wallRects = [];
+}
+
+function spriteScale(baseScale) {
+
+  return baseScale * Math.min(width, height) / 720;
+}
+
+function cropFrame(sheet, col, row) {
+
+  return sheet.get(col * sheet.width / 2, row * sheet.height / 2, sheet.width / 2, sheet.height / 2);
 }
